@@ -19,3 +19,5 @@ Requirements:
     plug-in used: https://github.com/Leaflet/Leaflet.markercluster. 
     
 -When a user search for a new date range, the map should be refreshed and display the new matching result.
+    
+    The old markers disappear initially when you click apply, but unfortunately it seems like they reappear later when you start zooming in and out.
