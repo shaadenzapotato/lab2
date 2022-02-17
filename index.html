@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+	<head>
+        <title>Calgary Building Permits</title>
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin=""/>
+		
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+        
+        <style>
+        #map { height: 700px; }
+        </style>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+	<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/OverlappingMarkerSpiderfier-Leaflet/0.2.6/oms.min.js"></script>
+	<link rel="stylesheet" href="./MarkerCluster.css" />
+	<link rel="stylesheet" href="./MarkerCluster.Default.css" />
+	<script src="./leaflet.markercluster.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+       
+	</head>
+
+	
+    <body>
+
+		<script>
+			
+			var map = L.map('map').setView([51.05011, -114.08529], 11)
+			L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+			attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+			maxZoom: 18,
+			id: 'mapbox/streets-v11',
+			tileSize: 512,
+			zoomOffset: -1,
+			accessToken: 'pk.eyJ1Ijoic2hhYWRlbnNzIiwiYSI6ImNrem0wbG41YjJkc3Qyd24yeGl2MTlkdXYifQ.6QUloRYZssJlCCzbwsXmgQ'
+			}).addTo(map);
+			// var markers = L.MarkerClusterGroup();
+		</script>
+		<input type="text" name="datefilter" value="" />
+
+		<script type="text/javascript">
+		$(function() {
+	
+		$('input[name="datefilter"]').daterangepicker({
+			autoUpdateInput: false,
+			locale: {
+				cancelLabel: 'Clear'
+			}
+		});
+	
+		$('input[name="datefilter"]').on('apply.daterangepicker', function(ev, picker) {
+			$(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+					axios.get(`https://data.calgary.ca/resource/c2es-76ed.geojson?$where=issueddate > '${picker.startDate.format('YYYY-MM-DD')}' and issueddate < '${picker.endDate.format('YYYY-MM-DD')}'&$select=issueddate,communitycode,workclassgroup,contractorname,originaladdress,latitude,longitude`)
+				.then(response => {
+					
+					$(".leaflet-marker-icon").remove();
+					$(".leaflet-popup").remove();
+					var markers = L.markerClusterGroup();
+					var oms = new OverlappingMarkerSpiderfier(map, keepSpiderfied=true);
+					var popup = new L.Popup();
+					const permits = response.data.features;
+					console.log(`GET list permits`, permits);
+					for(let i=0; i<permits.length-1;i++){
+						var marker = L.marker([permits[i].properties.latitude, permits[i].properties.longitude]);
+						marker.bindPopup(`<b>issued date: </b>${permits[i].properties.issueddate}<br><b>work class group: </b>${permits[i].properties.workclassgroup}<br><b>contractor name: </b>${permits[i].properties.contractorname}<br><b>community name: </b>${permits[i].properties.communityname}<br><b>original address: </b>${permits[i].properties.originaladdress}`);
+						oms.addMarker(marker);
+						markers.addLayer(marker);
+					}
+					
+					map.addLayer(markers);
+				 })
+				 .catch(error => console.error(error));
+		
+				});
+	
+			$('input[name="datefilter"]').on('cancel.daterangepicker', function(ev, picker) {
+				$(this).val('');
+			});
+		
+			});
+			</script>
+	
+		<div id="map"></div>
+	
+		<script>
+		var map = L.map('map').setView([51.05011, -114.08529], 11)
+		L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+		attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+		maxZoom: 18,
+		id: 'mapbox/streets-v11',
+		tileSize: 512,
+		zoomOffset: -1,
+		accessToken: 'pk.eyJ1Ijoic2hhYWRlbnNzIiwiYSI6ImNrem0wbG41YjJkc3Qyd24yeGl2MTlkdXYifQ.6QUloRYZssJlCCzbwsXmgQ'
+		}).addTo(map);
+
+		</script>
+        <h1>Calgary Building Permits</h1>
+    </body>
+</html>
